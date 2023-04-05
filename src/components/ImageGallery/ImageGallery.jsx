@@ -4,6 +4,8 @@ import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
 import { Component } from 'react';
 import { getSearchPhoto } from '../../servises/hpotoAPI';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 // import Images from '../../data/Images.json';
 
 class ImageGallery extends Component {
@@ -13,8 +15,9 @@ class ImageGallery extends Component {
     page: 1,
     query: '',
     error: null,
-    isMofalOpet: false,
+    // isModalOpet: false,
     modalData: null,
+    totalImages: 0,
   };
 
   static getDerivedStateFromProps(props, state) {
@@ -44,9 +47,19 @@ class ImageGallery extends Component {
       if (data.hits.length === 0) {
         throw new Error('No photos data');
       }
-      this.setState(prev => ({
-        Images: page === 1 ? data.hits : [...prev.Images, ...data.hits],
-      }));
+      this.setState(
+        prev => ({
+          Images: page === 1 ? data.hits : [...prev.Images, ...data.hits],
+          totalImages: data.total,
+        }),
+        () => {
+          if (page === 1) {
+            toast(`Found ${this.state.totalImages} images`);
+          } else if (data.hits.length > 0) {
+            toast(`Loaded ${data.hits.length} more images`);
+          }
+        }
+      );
     } catch (error) {
       this.setState({ error: error.message });
     } finally {
@@ -67,7 +80,8 @@ class ImageGallery extends Component {
   };
 
   render() {
-    const { Images, error, modalData } = this.state;
+    const { Images, error, modalData, totalImages } = this.state;
+
     return (
       <>
         {this.state.isLoadding && <Loader />}
@@ -77,7 +91,10 @@ class ImageGallery extends Component {
           <>
             <ImageGalleryItem Images={Images} openModal={this.openModal} />
 
-            {Images.length > 0 && <Button onClick={this.changePage} />}
+            {Images.length > 0 && Images.length !== totalImages && (
+              <Button onClick={this.changePage} />
+            )}
+            <ToastContainer />
           </>
         )}
         {modalData && <Modal {...modalData} closeModal={this.closeModal} />}
